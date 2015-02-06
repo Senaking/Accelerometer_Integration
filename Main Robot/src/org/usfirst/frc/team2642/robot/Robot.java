@@ -32,14 +32,22 @@ public class Robot extends IterativeRobot {
 	Accelerometer accel;
 	Timer myTimer;
 	Compressor compress;
-	Solenoid mySolenoid;
-	Gyro myGyro;
+	Solenoid solenoid;
+	Gyro gyro;
 	int autoLoopCounter;
 	double[] accelx = new double[]{0,0,0,0,0};
     double[] accely = new double[]{0,0,0,0,0};
     
     double dtime;
     public boolean calcdist1 = true;
+	
+	final int frontLeftChannel	= 2;
+    final int rearLeftChannel	= 3;
+    final int frontRightChannel	= 1;
+    final int rearRightChannel	= 0;
+    double Kp = .03;
+    int crabcount = 0;
+    double gyroset;
 	
 	
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
@@ -64,8 +72,8 @@ public class Robot extends IterativeRobot {
     	accel = new BuiltInAccelerometer(Accelerometer.Range.k4G);
     	myTimer = new Timer();
     	compress = new Compressor(0);
-    	mySolenoid = new Solenoid(0);
-    	myGyro = new Gyro(0);
+    	solenoid = new Solenoid(0);
+    	gyro = new Gyro(0);
     	
     }
 	
@@ -86,48 +94,72 @@ public class Robot extends IterativeRobot {
      */
     public void autonomousPeriodic() {
         Scheduler.getInstance().run();
-        while (accelx[4]<2 || accelx[4]>-2 || accely[4]<2 || accely[4]>-2) {
+        while (accelx[4]<1 || accelx[4]>-1 || accely[4]<1 || accely[4]>-1) {
         	
         	myTimer.reset();
-	    	accelx[0] = (Math.floor((accel.getX()*100)+5)/100)-0.055;
-	    	accely[0] = (Math.floor((accel.getX()*100)+5)/100)-0.055;
-	    	//Timer.delay(0.1);
-        	dtime = myTimer.get();
-        	//dtime = 0.001;
+	    	//accelx[1] = (Math.floor((accel.getX()*100)+5)/100)-0.055;
+	    	//accely[1] = (Math.floor((accel.getY()*100)+5)/100)-0.075;
+	    	if (accel.getX()>0.04 || accel.getX()<-0.04) {
+	    		accelx[1] = accel.getX();
+	    	}else{
+	    		accelx[1] = 0;
+	    	}
+	    	if (accel.getY()<-0.04 || accel.getY()>0.04) {
+	    		accely[1] = accel.getY();
+	    	}else{
+	    		accely[1] = 0;
+	    	}
+	    	Timer.delay(0.1);
+        	//dtime = myTimer.get();
+        	dtime = 0.1;
+        	// accelx[3] = accelx[2]+dtime*(0.5)*(accelx[0]+accelx[1]);
         	
-        	//accelx[2] = ((accelx[0]-accelx[1])/2)*dtime+accelx[3];
-	    	//accelx[4] = ((accelx[2]-accelx[3])/2)*dtime+accelx[4];
+        	/*if (accelx[1]==0) {
+        		accelx[3] = 0;
+        	}*/
+        	
+	    	//accelx[4] += dtime*(0.5)*(accelx[2]+accelx[3]);
 	    	
-	    	accelx[2] = accelx[0]*dtime+accelx[1];
-	    	accelx[4] = accelx[2]*dtime+accelx[3];
+        	accelx[4] = accelx[3]*dtime+(.25)*(accelx[0]+accelx[1])*dtime*dtime;
+        	accelx[3] = (0.5)*(accelx[0]+accelx[1])*dtime;
+        	
+	    	//accelx[2] = accelx[0]*dtime+accelx[1];
+	    	//accelx[4] = accelx[2]*dtime+accelx[3];
 	    	
 	    	//dtime = myTimer.get();
 	    	
-	    	//accely[2] = ((accely[0]-accely[1])/2)*dtime+accely[3];
-	    	//accely[4] = ((accely[2]-accely[3])/2)*dtime+accely[4];
+	    	// accely[3] = accely[2]+dtime*(0.5)*(accely[0]+accely[1]);
 	    	
-	    	accely[2] = accely[0]*dtime+accely[1];
-	    	accely[4] = accely[2]*dtime+accely[3];
+	    	/*if (accely[1]==0) {
+        		accely[3] = 0;
+        	}*/ 
+	    	// accely[4] += dtime*(0.5)*(accely[2]+accely[3]);
 	    	
-	    	accelx[1] = accelx[2];
-	    	accelx[3] = accelx[4];
+	    	//accely[2] = accely[0]*dtime+accely[1];
+	    	//accely[4] = accely[2]*dtime+accely[3];
 	    	
-	    	accely[1] = accely[2];
-	    	accely[3] = accely[4];
+        	accely[4] = accely[3]*dtime+(.25)*(accely[0]+accely[1])*dtime*dtime;
+        	accely[3] = (0.5)*(accely[0]+accely[1])*dtime;
+        	
+	    	accelx[0] = accelx[1];
+	    	//accelx[2] = accelx[3];
+	    	
+	    	accely[0] = accely[1];
+	    	//accely[2] = accely[3];
 	    	
 		    //System.out.println(accelx[4]);
 		    //System.out.println(accely[4]);
 		    
-		    myRobot.mecanumDrive_Cartesian(0,0.3,0,0);
+		    // myRobot.mecanumDrive_Cartesian(0,0.3,0,0);
 	    	
-		    SmartDashboard.putNumber("x Acceleration", accelx[0]);
-		    SmartDashboard.putNumber("y Acceleration", accely[0]);
-		    SmartDashboard.putNumber("x PastVelocity", accelx[1]);
-		    SmartDashboard.putNumber("y PastVelocity", accely[1]);
-		    SmartDashboard.putNumber("x Velocity", accelx[2]);
-		    SmartDashboard.putNumber("y Velocity", accely[2]);
-		    SmartDashboard.putNumber("x PastDisplacement", accelx[3]);
-		    SmartDashboard.putNumber("y PastDisplacement", accely[3]);
+		    SmartDashboard.putNumber("x PastAcceleration", accelx[0]);
+		    SmartDashboard.putNumber("y PastAcceleration", accely[0]);
+		    SmartDashboard.putNumber("x Acceleration", accelx[1]);
+		    SmartDashboard.putNumber("y Acceleration", accely[1]);
+		    //SmartDashboard.putNumber("x PastVelocity", accelx[2]);
+		    //SmartDashboard.putNumber("y PastVelocity", accely[2]);
+		    SmartDashboard.putNumber("x Velocity", accelx[3]);
+		    SmartDashboard.putNumber("y Velocity", accely[3]);
 		    SmartDashboard.putNumber("x Displacement", accelx[4]);
 		    SmartDashboard.putNumber("y Displacement", accely[4]);
 	    	SmartDashboard.putNumber("Timer", dtime);
@@ -136,7 +168,7 @@ public class Robot extends IterativeRobot {
 		    	calcdist1 = false;
 		    }*/
         }// end while loop
-        myRobot.mecanumDrive_Cartesian(0,0 ,0,0);
+        myRobot.mecanumDrive_Cartesian(0,0,0,0);
     }
 
     public void teleopInit() {
@@ -164,8 +196,22 @@ public class Robot extends IterativeRobot {
     public void teleopPeriodic() {
         Scheduler.getInstance().run();
         
-        myRobot.mecanumDrive_Cartesian(-stick.getRawAxis(1),-stick.getRawAxis(2),stick.getRawAxis(4),0);
-        
+        if(!stick.getRawButton(11)){
+    		if (stick.getRawButton(1)){
+    		myRobot.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), gyro.getAngle());
+    		}else if(stick.getRawButton(2) && crabcount <=1){
+    		gyroset = gyro.getAngle();
+    		crabcount++;
+    		}else if(stick.getRawButton(2) && (crabcount >= 2)){
+    		myRobot.mecanumDrive_Cartesian(stick.getX()/2, stick.getY()/2, (gyro.getAngle() - gyroset) * Kp, gyro.getAngle()/2);
+    		}else if(crabcount >= 1 && !stick.getRawButton(2)){
+    		crabcount = 0;
+    		}else {
+    		myRobot.mecanumDrive_Cartesian(stick.getX() /2, stick.getY() /2, stick.getTwist() /2, gyro.getAngle());}
+    	}else{
+    		myRobot.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+
+    	}
         
         
         
