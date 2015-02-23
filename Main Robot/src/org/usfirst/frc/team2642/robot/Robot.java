@@ -35,13 +35,11 @@ public class Robot extends IterativeRobot {
 	Solenoid solenoid;
 	Gyro gyro;
 	int autoLoopCounter;
-	double[] accelx = new double[]{0,0,0,0,0};
-    double[] accely = new double[]{0,0,0,0,0};
-    
-    double dtime;
-    public boolean calcdist1 = true;
-	
-	final int frontLeftChannel	= 2;
+	double[] accel = new double[]{0,0,0,0};
+    	double dtime;
+	int axis= 0;
+	public boolean calcdist1 = true;
+	final int frontLeftChannel = 2;
     final int rearLeftChannel	= 3;
     final int frontRightChannel	= 1;
     final int rearRightChannel	= 0;
@@ -52,6 +50,34 @@ public class Robot extends IterativeRobot {
 	
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
+	public static move(int axis, double length, double speed){//0 stands for x axis, any other number stands for y
+	double[] accelstore = new double[]{0,0,0,0};
+	        while (accelstore[3]<length || accelstore[3]>-length) {
+        	myTimer.reset();
+		if (axis=0){
+	    	if (accel.getX()>0.04 || accel.getX()<-0.04) {
+	    		accelstore[1] = accel.getX();
+	    	}else{
+	    		accelstore[1] = 0;
+	    	}
+		}
+		else{
+		if (accel.getY()>0.04 || accel.getY()<-0.04) {
+	    		accelstore[1] = accel.getY();
+	    	}else{
+	    		accelstore[1] = 0;
+	    	}
+		}
+	    	Timer.delay(0.1);
+        	accelstore[3] = accelstore[2]*0.1+(.25)*(accelstore[0]+accelstore[1])*0.01;
+        	accelstore[2] = (0.5)*(accelstore[0]+accelstore[1])*0.1;
+	    	accelstore[0] = accelstore[1];
+		    myRobot.mecanumDrive_Cartesian(0,speed,0,0);
+        }// end while loop
+        myRobot.mecanumDrive_Cartesian(0,0,0,0);
+	accelstore.free();
+    		}
+	}
 
     Command autonomousCommand;
 
@@ -94,79 +120,38 @@ public class Robot extends IterativeRobot {
      */
     public void autonomousPeriodic() {
         Scheduler.getInstance().run();
-        while (accelx[4]<1 || accelx[4]>-1 || accely[4]<1 || accely[4]>-1) {
-        	
+
+        while (accel[3]<1 || accel[3]>-1) {
         	myTimer.reset();
-	    	//accelx[1] = (Math.floor((accel.getX()*100)+5)/100)-0.055;
-	    	//accely[1] = (Math.floor((accel.getY()*100)+5)/100)-0.075;
+		if (axis=0){
 	    	if (accel.getX()>0.04 || accel.getX()<-0.04) {
-	    		accelx[1] = accel.getX();
+	    		accel[1] = accel.getX();
 	    	}else{
-	    		accelx[1] = 0;
+	    		accel[1] = 0;
 	    	}
-	    	if (accel.getY()<-0.04 || accel.getY()>0.04) {
-	    		accely[1] = accel.getY();
+		}
+		else{
+		if (accel.getY()>0.04 || accel.getY()<-0.04) {
+	    		accel[1] = accel.getX();
 	    	}else{
-	    		accely[1] = 0;
+	    		accel[1] = 0;
 	    	}
+		}
+
 	    	Timer.delay(0.1);
-        	//dtime = myTimer.get();
         	dtime = 0.1;
-        	// accelx[3] = accelx[2]+dtime*(0.5)*(accelx[0]+accelx[1]);
-        	
-        	/*if (accelx[1]==0) {
-        		accelx[3] = 0;
-        	}*/
-        	
-	    	//accelx[4] += dtime*(0.5)*(accelx[2]+accelx[3]);
-	    	
-        	accelx[4] = accelx[3]*dtime+(.25)*(accelx[0]+accelx[1])*dtime*dtime;
-        	accelx[3] = (0.5)*(accelx[0]+accelx[1])*dtime;
-        	
-	    	//accelx[2] = accelx[0]*dtime+accelx[1];
-	    	//accelx[4] = accelx[2]*dtime+accelx[3];
-	    	
-	    	//dtime = myTimer.get();
-	    	
-	    	// accely[3] = accely[2]+dtime*(0.5)*(accely[0]+accely[1]);
-	    	
-	    	/*if (accely[1]==0) {
-        		accely[3] = 0;
-        	}*/ 
-	    	// accely[4] += dtime*(0.5)*(accely[2]+accely[3]);
-	    	
-	    	//accely[2] = accely[0]*dtime+accely[1];
-	    	//accely[4] = accely[2]*dtime+accely[3];
-	    	
-        	accely[4] = accely[3]*dtime+(.25)*(accely[0]+accely[1])*dtime*dtime;
-        	accely[3] = (0.5)*(accely[0]+accely[1])*dtime;
-        	
-	    	accelx[0] = accelx[1];
-	    	//accelx[2] = accelx[3];
-	    	
-	    	accely[0] = accely[1];
-	    	//accely[2] = accely[3];
-	    	
-		    //System.out.println(accelx[4]);
-		    //System.out.println(accely[4]);
+        	accel[3] = accel[2]*dtime+(.25)*(accel[0]+accel[1])*dtime*dtime;
+        	accel[2] = (0.5)*(accel[0]+accel[1])*dtime;
+	    	accel[0] = accel[1];
 		    
-		    // myRobot.mecanumDrive_Cartesian(0,0.3,0,0);
+		    myRobot.mecanumDrive_Cartesian(0,0.3,0,0);
 	    	
-		    SmartDashboard.putNumber("x PastAcceleration", accelx[0]);
-		    SmartDashboard.putNumber("y PastAcceleration", accely[0]);
-		    SmartDashboard.putNumber("x Acceleration", accelx[1]);
-		    SmartDashboard.putNumber("y Acceleration", accely[1]);
-		    //SmartDashboard.putNumber("x PastVelocity", accelx[2]);
-		    //SmartDashboard.putNumber("y PastVelocity", accely[2]);
-		    SmartDashboard.putNumber("x Velocity", accelx[3]);
-		    SmartDashboard.putNumber("y Velocity", accely[3]);
-		    SmartDashboard.putNumber("x Displacement", accelx[4]);
-		    SmartDashboard.putNumber("y Displacement", accely[4]);
-	    	SmartDashboard.putNumber("Timer", dtime);
+		    SmartDashboard.putNumber("PastAcceleration", accel[0]);
+		    SmartDashboard.putNumber("Acceleration", accel[1]);
+		    SmartDashboard.putNumber("Velocity", accel[2]);
+		    SmartDashboard.putNumber("Displacement", accel[3]);
+	    	    SmartDashboard.putNumber("Timer", dtime);
 		    
-		    /*if (stick.getRawButton(1) == true) {
-		    	calcdist1 = false;
-		    }*/
         }// end while loop
         myRobot.mecanumDrive_Cartesian(0,0,0,0);
     }
@@ -212,10 +197,6 @@ public class Robot extends IterativeRobot {
     		myRobot.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
 
     	}
-        
-        
-        
-        
         
     }
     
