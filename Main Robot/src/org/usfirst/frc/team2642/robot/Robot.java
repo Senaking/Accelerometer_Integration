@@ -29,7 +29,8 @@ public class Robot extends IterativeRobot {
 	
 	RobotDrive myRobot;
 	Joystick stick;
-	Accelerometer accel;
+	ADXL345_I2C accel;
+	ADXL345_I2C.Allaxes accelerations;
 	Timer myTimer;
 	Compressor compress;
 	Solenoid solenoid;
@@ -37,7 +38,6 @@ public class Robot extends IterativeRobot {
 	int autoLoopCounter;
 	double[] accel = new double[]{0,0,0,0};
     	double dtime;
-	int axis= 0;
 	public boolean calcdist1 = true;
 	final int frontLeftChannel = 2;
     final int rearLeftChannel	= 3;
@@ -50,34 +50,6 @@ public class Robot extends IterativeRobot {
 	
 	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
-	public static move(int axis, double length, double speed){//0 stands for x axis, any other number stands for y
-	double[] accelstore = new double[]{0,0,0,0};
-	        while (accelstore[3]<length || accelstore[3]>-length) {
-        	myTimer.reset();
-		if (axis=0){
-	    	if (accel.getX()>0.04 || accel.getX()<-0.04) {
-	    		accelstore[1] = accel.getX();
-	    	}else{
-	    		accelstore[1] = 0;
-	    	}
-		}
-		else{
-		if (accel.getY()>0.04 || accel.getY()<-0.04) {
-	    		accelstore[1] = accel.getY();
-	    	}else{
-	    		accelstore[1] = 0;
-	    	}
-		}
-	    	Timer.delay(0.1);
-        	accelstore[3] = accelstore[2]*0.1+(.25)*(accelstore[0]+accelstore[1])*0.01;
-        	accelstore[2] = (0.5)*(accelstore[0]+accelstore[1])*0.1;
-	    	accelstore[0] = accelstore[1];
-		    myRobot.mecanumDrive_Cartesian(0,speed,0,0);
-        }// end while loop
-        myRobot.mecanumDrive_Cartesian(0,0,0,0);
-	accelstore.free();
-    		}
-	}
 
     Command autonomousCommand;
 
@@ -120,7 +92,30 @@ public class Robot extends IterativeRobot {
      */
     public void autonomousPeriodic() {
         Scheduler.getInstance().run();
-	//Insert autonomous commands here
+        while (accel[3]<1 || accel[3]>-1) {
+        	myTimer.reset();
+	    	if (accel.getAcceleration(ADXL345_I2C.Axes.kX)>0.04 || accel.getAcceleration(ADXL345_I2C.Axes.kX)<-0.04) {
+	    		accel[1] = accel.getAcceleration(ADXL345_I2C.Axes.kX);
+	    	}else{
+	    		accel[1] = 0;
+	    	}
+	    	Timer.delay(0.1);
+        	dtime = 0.1;
+        	accel[3] = accel[2]*dtime+(.25)*(accel[0]+accel[1])*dtime*dtime;
+        	accel[2] = (0.5)*(accel[0]+accel[1])*dtime;
+	    	accel[0] = accel[1];
+		    
+		    myRobot.mecanumDrive_Cartesian(0,0.3,0,0);
+	    	
+		    SmartDashboard.putNumber("PastAcceleration", accel[0]);
+		    SmartDashboard.putNumber("Acceleration", accel[1]);
+		    SmartDashboard.putNumber("Velocity", accel[2]);
+		    SmartDashboard.putNumber("Displacement", accel[3]);
+	    	    SmartDashboard.putNumber("Timer", dtime);
+		    
+        }// end while loop
+        myRobot.mecanumDrive_Cartesian(0,0,0,0);
+    }
 
     public void teleopInit() {
 		// This makes sure that the autonomous stops running when
@@ -149,20 +144,24 @@ public class Robot extends IterativeRobot {
         
         if(!stick.getRawButton(11)){
     		if (stick.getRawButton(1)){
-    		myRobot.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), gyro.getAngle());
+    		myRobot.mecanumDrive_Cartesian(stick.getAcceleration(ADXL345_I2C.Axes.kX), stick.getAcceleration(ADXL345_I2C.Axes.kY), stick.getTwist(), gyro.getAngle());
     		}else if(stick.getRawButton(2) && crabcount <=1){
     		gyroset = gyro.getAngle();
     		crabcount++;
     		}else if(stick.getRawButton(2) && (crabcount >= 2)){
-    		myRobot.mecanumDrive_Cartesian(stick.getX()/2, stick.getY()/2, (gyro.getAngle() - gyroset) * Kp, gyro.getAngle()/2);
+    		myRobot.mecanumDrive_Cartesian(stick.getAcceleration(ADXL345_I2C.Axes.kX)/2, stick.getAcceleration(ADXL345_I2C.Axes.kY)/2, (gyro.getAngle() - gyroset) * Kp, gyro.getAngle()/2);
     		}else if(crabcount >= 1 && !stick.getRawButton(2)){
     		crabcount = 0;
     		}else {
-    		myRobot.mecanumDrive_Cartesian(stick.getX() /2, stick.getY() /2, stick.getTwist() /2, gyro.getAngle());}
+    		myRobot.mecanumDrive_Cartesian(stick.getAcceleration(ADXL345_I2C.Axes.kX) /2, stick.getAcceleration(ADXL345_I2C.Axes.kY) /2, stick.getTwist() /2, gyro.getAngle());}
     	}else{
-    		myRobot.mecanumDrive_Cartesian(stick.getX(), stick.getY(), stick.getTwist(), 0.0);
+    		myRobot.mecanumDrive_Cartesian(stick.getAcceleration(ADXL345_I2C.Axes.kX), stick.getAcceleration(ADXL345_I2C.Axes.kY), stick.getTwist(), 0.0);
 
     	}
+        
+        
+        
+        
         
     }
     
